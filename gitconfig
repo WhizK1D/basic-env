@@ -1,0 +1,26 @@
+# This is Git's per-user configuration file.
+[user]
+# Please adapt and uncomment the following lines:
+	name = Abhyudaya
+[color]
+	ui = auto
+[alias]
+	view = log --oneline --graph --decorate
+	v = log --oneline --graph --decorate
+	lastCommit = diff HEAD^ HEAD
+	commti = commit
+	satis = status
+	stati = status
+	staus = status
+	statis = status
+	stauts = status
+	statsu = status
+	stauta = status
+	statua = status
+	stasu = status
+	comit = commit
+	comti = commit
+	brnach = branch
+	rbanch = branch
+	run = !git remote update && git rebase origin/master
+	rem = remote update
