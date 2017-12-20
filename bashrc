@@ -8,10 +8,19 @@ alias ll="ls -l"
 
 gva()
 {
-	if [ $# -eq 0 ]; then
-		git view --all -n 5
-	else
-		# Call git view with no of arguments as input
-		git view --all -n $1
-	fi
+    if [ $# -eq 0 ]; then
+        git view --all -n 5
+    else
+	# Call git view with no of arguments as input
+	git view --all -n $1
+    fi
+}
+
+gp()
+{
+    if [$# -eq 0]; then
+        git push origin HEAD:master
+    else
+        git push origin HEAD:$1
+    fi
 }
