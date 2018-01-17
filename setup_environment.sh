@@ -45,6 +45,7 @@ install_vim()
 which vim
  if [ $? -ne 0 ]; then
      echo "vim not found installed on the system! Installing vim...\nsudo password maybe required"
+     install_vim
  else
      echo "vim found installed, continuing..."
  fi
