@@ -42,6 +42,27 @@ install_vim()
     sudo apt-get install vim
 }
 
+setup_terminator()
+{
+    mkdir -p ~/.config/terminator
+    cp terminator-config ~/.config/terminator/config
+}
+
+install_terminator()
+{
+    sudo apt-get install terminator
+}
+
+which terminator
+if [ $? -ne 0 ]; then
+    echo "Terminator not found installed on the system! Installing terminator...\nsudo  password maybe required"
+    install_terminator
+    setup_terminator
+else
+    echo "Terminator installed, setting up..."
+    setup_terminator
+fi
+
 which vim
  if [ $? -ne 0 ]; then
      echo "vim not found installed on the system! Installing vim...\nsudo password maybe required"
