@@ -8,6 +8,7 @@ syntastic,https://github.com/scrooloose/syntastic
 vim-airline,https://github.com/vim-airline/vim-airline
 vim-airline-themes,https://github.com/vim-airline/vim-airline-themes
 vim-bookmarks,https://github.com/mattesgroeger/vim-bookmarks
+L9,https://github.com/vim-scripts/L9.git,c822b05ee0886f9a9703227dc85a6d47612c4bf1
 FuzzyFinder,https://github.com/vim-scripts/FuzzyFinder
 vim-colorscheme,https://github.com/flazz/vim-colorschemes
 vim-fugitive,https://github.com/tpope/vim-fugitive

@@ -1,0 +1,140 @@
+#!/bin/bash
+# Aliases and small helper functions for interactive shells.
+# Sourced by .setup; safe to source repeatedly.
+
+# --- Generic aliases -------------------------------------------------------
+alias v="vim"
+alias sv="sudo vim"
+alias c="clear"
+alias d="cd ~/Desktop/"
+alias g="git"
+alias s="sudo"
+alias sbrc="source ~/.bashrc"
+alias vbrc="v ~/.bashrc"
+alias f="find . -iname"
+
+# --- ls family --------------------------------------------------------------
+# Prefer eza when installed; otherwise fall back to plain GNU ls. Both
+# branches always (re)assign the aliases so re-sourcing after eza is
+# installed or removed never leaves stale definitions behind.
+if type -P eza >/dev/null 2>&1; then
+    alias ls='eza --color=auto --group-directories-first'
+    alias l='eza --color=auto --group-directories-first'
+    alias la='eza -a --color=auto --group-directories-first'
+    alias ll='eza -la --color=auto --group-directories-first'
+else
+    alias ls='ls --color=auto'
+    alias l='ls --color=auto'
+    alias la='ls -a --color=auto'
+    alias ll='ls -l --color=auto'
+fi
+
+# --- cat / bat --------------------------------------------------------------
+# Prefer batcat (the Debian/Ubuntu binary name) and fall back to bat.
+# type -P only searches PATH, so aliases can never masquerade as installed
+# commands when this file is re-sourced.
+basic_env_bat=""
+if type -P batcat >/dev/null 2>&1; then
+    basic_env_bat="batcat"
+elif type -P bat >/dev/null 2>&1; then
+    basic_env_bat="bat"
+fi
+
+if [ -n "$basic_env_bat" ]; then
+    # --paging=never keeps cat non-interactive like the real cat
+    alias cat="$basic_env_bat --paging=never"
+    # Expose the conventional `bat` name on Debian-style installs where the
+    # binary is only shipped as batcat.
+    if [ "$basic_env_bat" = "batcat" ] && ! type -P bat >/dev/null 2>&1; then
+        alias bat='batcat'
+    else
+        unalias bat 2>/dev/null
+    fi
+else
+    # No bat available: drop any stale managed aliases so plain cat works.
+    unalias cat 2>/dev/null
+    unalias bat 2>/dev/null
+fi
+# dcat always reaches the real cat regardless of the managed alias above.
+alias dcat='command cat'
+unset basic_env_bat
+
+# --- Helper functions -------------------------------------------------------
+
+# gva [n] - show the git history graph; defaults to 5 entries.
+gva() {
+    local count=5
+    if [ $# -gt 1 ]; then
+        printf 'gva: expected zero or one argument\n' >&2
+        return 2
+    fi
+    if [ $# -eq 1 ]; then
+        case $1 in
+            ''|*[!0-9]*)
+                printf 'gva: expected a non-negative integer, got %s\n' "$1" >&2
+                return 2
+                ;;
+        esac
+        count=$1
+    fi
+    git view --all -n "$count"
+}
+
+# gp [branch] - push the current HEAD to origin; defaults to origin/master.
+gp() {
+    if [ $# -eq 0 ]; then
+        git push origin HEAD:master
+    elif [ $# -eq 1 ] && [ -n "$1" ]; then
+        if ! git check-ref-format --branch "$1" >/dev/null 2>&1; then
+            printf 'gp: invalid branch name %s\n' "$1" >&2
+            return 2
+        fi
+        git push origin "HEAD:$1"
+    else
+        printf 'gp: expected zero or one argument\n' >&2
+        return 2
+    fi
+}
+
+# sin <pkg>... - install packages with apt (interactive confirmation).
+sin() {
+    if [ $# -eq 0 ]; then
+        printf 'sin: expected at least one package name\n' >&2
+        return 2
+    fi
+    sudo apt-get install "$@"
+}
+
+# extract <archive> - extract exactly one existing archive file.
+extract() {
+    if [ $# -ne 1 ]; then
+        printf 'extract: expected exactly one file\n' >&2
+        return 2
+    fi
+    if [ ! -f "$1" ]; then
+        printf "extract: '%s' is not a valid file\n" "$1" >&2
+        return 1
+    fi
+    # Anchor bare relative names to ./ so names that look like options
+    # (e.g. -foo.zip) are always treated as files by every archiver below.
+    local archive=$1
+    case $archive in
+        /*|.*) ;;
+        *) archive="./$archive" ;;
+    esac
+    case $archive in
+        *.tar.bz2|*.tbz2) tar xvjf "$archive" ;;
+        *.tar.gz|*.tgz)   tar xvzf "$archive" ;;
+        *.bz2)            bunzip2 "$archive" ;;
+        *.rar)            unrar x "$archive" ;;
+        *.gz)             gunzip "$archive" ;;
+        *.tar)            tar xvf "$archive" ;;
+        *.zip)            unzip "$archive" ;;
+        *.Z)              uncompress "$archive" ;;
+        *.7z)             7z x "$archive" ;;
+        *)
+            printf "extract: don't know how to extract '%s'\n" "$1" >&2
+            return 1
+            ;;
+    esac
+}

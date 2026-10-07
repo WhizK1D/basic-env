@@ -1,0 +1,15 @@
+# Local secrets and machine-local overrides live outside this checkout
+.keys
+keys
+.local
+
+# Pre-existing private working files - never publish
+ai-context/
+ai-tools-setup/
+basic-env-architecture.excalidraw
+
+# Backups, editor droppings, and test caches
+*.bak
+*.swp
+*~
+__pycache__/

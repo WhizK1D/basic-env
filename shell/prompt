@@ -1,0 +1,36 @@
+#!/bin/bash
+# Prompt configuration: two-line status prompt with optional Git branch info.
+# Sourced by .setup after .colors so the color variables exist.
+# Requires no temporary files and performs no repository scans by default.
+
+# Load Git's own maintained prompt helper from the usual packaged locations
+# unless something (e.g. distro bash completion) already defined it.
+# The helper handles nested repos, linked worktrees, detached HEAD and
+# in-progress merge/rebase/bisect states without any custom parsing.
+if ! declare -F __git_ps1 >/dev/null 2>&1; then
+    for basic_env_git_prompt_sh in \
+        /usr/lib/git-core/git-sh-prompt \
+        /usr/share/git/completion/git-prompt.sh \
+        /usr/share/git-core/contrib/completion/git-prompt.sh
+    do
+        if [ -r "$basic_env_git_prompt_sh" ]; then
+            . "$basic_env_git_prompt_sh"
+            break
+        fi
+    done
+    unset basic_env_git_prompt_sh
+fi
+
+# Print " (<branch-or-state>)" inside a work tree, nothing otherwise.
+# Git stays optional: no helper means a clean prompt with no branch segment.
+basic_env_git_prompt() {
+    if declare -F __git_ps1 >/dev/null 2>&1; then
+        __git_ps1 ' (%s)'
+    fi
+}
+
+# Line 1: [last-exit-status][history-number] [user] [cwd] (git) [time] [date]
+# Line 2: $
+# \$? and \$(basic_env_git_prompt) stay deferred so every prompt reflects the
+# status of the command that just finished.
+PS1="\n\[$BWhite\][\$?][\!] \[$Cyan\][\u] \[$Green\][\w] \[$BYellow\]\$(basic_env_git_prompt)\[$Color_Off\] [\T] [\d] \n\$ "

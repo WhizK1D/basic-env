@@ -1,89 +1,72 @@
 #!/bin/bash
+# basic-env setup orchestrator.
+#
+# With no arguments this prints help and changes nothing. Stages run in
+# canonical order (install -> shell -> configure) no matter what order they
+# are given in. Unknown options or stage names are an error.
+set -euo pipefail
 
-export REPO_ROOT=$(pwd)
+case ${BASH_SOURCE[0]} in
+    */*) basic_env_self_dir=${BASH_SOURCE[0]%/*} ;;
+    *)   basic_env_self_dir=. ;;
+esac
+BASIC_ENV_REPO_ROOT="$(cd -- "$basic_env_self_dir" >/dev/null 2>&1 && pwd -P)"
+export BASIC_ENV_REPO_ROOT
+export BASIC_ENV_DRY_RUN=0
+export BASIC_ENV_REPLACE_CONFIGS=0
 
-setup_vim_plugins()
-{
+usage() {
+    cat <<'EOF'
+Usage: setup_environment.sh [--dry-run] [--replace-configs] <stage> [<stage>...]
 
-    for plugin in `cat vim_plugin_list`; do
-        plugin_name=`echo $plugin | awk -F',' '{print $1}'`;
-        plugin_URL=`echo $plugin | awk -F',' '{print $2}'`;
-        echo "Installing $plugin_name from $plugin_URL"
-        cd ~/.vim/bundle
-        git clone $plugin_URL
-        cd $REPO_ROOT
-    done
+Stages:
+  install     Install apt packages, Pathogen, and vim plugins
+              (uses the network and sudo for apt)
+  shell       Install shell modules to ~/.env and wire the ~/.bashrc import
+  configure   Install vimrc, terminator config and the git include
+  all         All of the above, in order
 
+Options:
+  --dry-run          Print intended actions without changing anything
+  --replace-configs  Back up and replace differing config files instead of
+                     refusing them (backups: ~/.local/state/basic-env/backups/)
+  -h, --help         Show this help
+EOF
 }
 
-setup_vimrc()
-{
-    cp $REPO_ROOT/vimrc ~/.vimrc
-}
+want_install=0
+want_shell=0
+want_configure=0
 
-setup_local_git_config()
-{
-    cp $REPO_ROOT/gitconfig ~/.gitconfig
-}
+for arg in "$@"; do
+    case $arg in
+        install)           want_install=1 ;;
+        shell)             want_shell=1 ;;
+        configure)         want_configure=1 ;;
+        all)               want_install=1; want_shell=1; want_configure=1 ;;
+        --dry-run)         BASIC_ENV_DRY_RUN=1 ;;
+        --replace-configs) BASIC_ENV_REPLACE_CONFIGS=1 ;;
+        -h|--help)         usage; exit 0 ;;
+        *)
+            printf 'setup_environment: unknown argument %s\n\n' "$arg" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
 
-configure_bashrc()
-{
-    cat bashrc >> ~/.bashrc
-}
-
-install_pathogen()
-{
-    mkdir -p ~/.vim/autoload ~/.vim/bundle && \
-    curl -LSso ~/.vim/autoload/pathogen.vim https://tpo.pe/pathogen.vim
-}
-
-install_vim()
-{
-    sudo apt-get install vim
-}
-
-setup_terminator()
-{
-    mkdir -p ~/.config/terminator
-    cp terminator-config ~/.config/terminator/config
-}
-
-install_terminator()
-{
-    sudo apt-get install terminator
-}
-
-which terminator
-if [ $? -ne 0 ]; then
-    echo "Terminator not found installed on the system! Installing terminator...\nsudo  password maybe required"
-    install_terminator
-    setup_terminator
-else
-    echo "Terminator installed, setting up..."
-    setup_terminator
+if [ "$want_install" -eq 0 ] && [ "$want_shell" -eq 0 ] && [ "$want_configure" -eq 0 ]; then
+    usage
+    exit 0
 fi
 
-which vim
- if [ $? -ne 0 ]; then
-     echo "vim not found installed on the system! Installing vim...\nsudo password maybe required"
-     install_vim
- else
-     echo "vim found installed, continuing..."
- fi
-
-echo "Setting up Pathogen plugin manager for vim"
-install_pathogen
-
-echo "Setting up .vimrc"
-setup_vimrc
-
-echo "Setting up vim plugins"
-setup_vim_plugins
-
-echo "Setting up .gitconfig"
-echo "WARNING: Your current local config will be over-written! Press Ctrl-C to quit this script here"
-read
-setup_local_git_config
-
-echo "Configuring bash aliases"
-configure_bashrc
+# Canonical order; set -e stops the run at the first stage failure.
+if [ "$want_install" -eq 1 ]; then
+    "$BASIC_ENV_REPO_ROOT/scripts/install-tools.sh"
+fi
+if [ "$want_shell" -eq 1 ]; then
+    "$BASIC_ENV_REPO_ROOT/scripts/setup-shell.sh"
+fi
+if [ "$want_configure" -eq 1 ]; then
+    "$BASIC_ENV_REPO_ROOT/scripts/configure-tools.sh"
+fi

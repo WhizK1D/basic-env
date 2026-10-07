@@ -1,0 +1,32 @@
+#!/bin/bash
+# Entry point for the basic-env shell modules.
+# Source this file from ~/.bashrc; do not execute it directly.
+
+# These modules are written for bash; ignore other shells and
+# non-interactive invocations so remote commands and scripts stay fast.
+if [ -z "${BASH_VERSION:-}" ]; then
+    return 0 2>/dev/null
+fi
+case $- in
+    *i*) ;;
+    *) return 0 ;;
+esac
+
+# Resolve the directory holding this file so it works from any location.
+# Pure builtins only: this must not depend on PATH.
+basic_env_src=${BASH_SOURCE[0]}
+case $basic_env_src in
+    */*) basic_env_dir="$(cd -- "${basic_env_src%/*}" >/dev/null 2>&1 && pwd -P)" ;;
+    *)   basic_env_dir="$(pwd -P)" ;;
+esac
+
+# Explicit module list, in load order. .keys and .local are optional local
+# files and are only sourced when present and readable; arbitrary dotfiles
+# in this directory are never sourced.
+for basic_env_module in .colors .aliases .prompt .keys .local; do
+    if [ -f "$basic_env_dir/$basic_env_module" ] && [ -r "$basic_env_dir/$basic_env_module" ]; then
+        . "$basic_env_dir/$basic_env_module"
+    fi
+done
+
+unset basic_env_src basic_env_dir basic_env_module
